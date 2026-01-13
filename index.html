@@ -49,6 +49,7 @@ td,th{border:1px solid #374151;padding:6px;text-align:center}
 </div>
 </div>
 
+<!-- KEEP Top-Up History Panel -->
 <div class="panel">
 <h3>Top-Up History</h3>
 <div id="history"></div>
@@ -76,8 +77,6 @@ let selectedEmployeeIndex=null;
 let game={
 cash:1000,phones:500,tg:2,ws:2,gv:0,
 customers:[],history:[],
-monthlyIncome:0,
-lastMonth:new Date().getMonth(),
 offices:[{employees:[]}],
 lastTick:Date.now(),weekMinutes:0,lastDay:null
 };
@@ -131,15 +130,7 @@ save();update();
 }
 
 function tick(ts){
-let now=new Date(ts);
-
-/* monthly reset */
-if(game.lastMonth!==now.getMonth()){
-game.lastMonth=now.getMonth();
-game.monthlyIncome=0;
-}
-
-let day=now.toDateString();
+let day=new Date(ts).toDateString();
 if(game.lastDay!==day){
 game.lastDay=day;
 game.offices[0].employees.forEach(e=>e.otMinutes=0);
@@ -149,19 +140,9 @@ game.offices[0].employees.forEach(e=>{
 if(isWork(ts)) e.workedMinutes+=10;
 else if(isOT(ts)&&e.otEnabled&&e.otMinutes<60){
 e.otMinutes+=10;
-game.cash-= (salary[e.role]/12/60)*10*1.5;
-}
-
-/* SALES → MONTHLY INCOME */
-if(e.role==="Sales" && isWork(ts) && Math.random()<0.12){
-let amount=rand(100,800);
-game.cash+=amount;
-game.monthlyIncome+=amount;
-e.topup+=amount;
-game.history.unshift(`💰 Sale → $${amount}`);
+game.cash-= (salary[e.role]/12/60)*10*1.5; // OT pay deducted
 }
 });
-
 save();update();
 }
 
@@ -196,8 +177,7 @@ document.getElementById("stats").innerHTML=
 📞 Phones: ${game.phones}<br>
 🟢 TG: ${game.tg} | 🔵 WS: ${game.ws}<br>
 📱 GV: ${game.gv}<br>
-👥 Customers: ${game.customers.length}<br>
-📆 Monthly Income: $${game.monthlyIncome.toFixed(2)}`;
+👥 Customers: ${game.customers.length}`;
 
 document.getElementById("employees").innerHTML=
 game.offices[0].employees.map((e,i)=>{
