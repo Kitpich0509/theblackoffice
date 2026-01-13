@@ -1,74 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Office Empire – Dashboard</title>
-<style>
-body{margin:0;background:#0b0e13;color:#e6f1ff;font-family:system-ui}
-header{background:#121826;padding:15px;font-size:20px}
-.dashboard{display:grid;grid-template-columns:1fr 2fr;gap:15px;padding:15px}
-.panel{background:#121826;padding:15px;border-radius:8px}
-button{background:#1f2937;color:#e6f1ff;border:1px solid #374151;padding:8px;margin:4px 0;width:100%}
-.card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px;cursor:pointer}
-.card.selected{outline:2px solid #38bdf8}
-.status{font-size:12px;margin-top:4px}
-.work{color:#22c55e}
-.rest{color:#94a3b8}
-.ot{color:#facc15}
-.fire{background:#7f1d1d;border-color:#991b1b}
-table{width:100%;border-collapse:collapse;font-size:13px}
-td,th{border:1px solid #374151;padding:6px;text-align:center}
-#popup,#report{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
-.modal{background:#121826;padding:20px;border-radius:8px;max-height:85vh;overflow:auto}
-</style>
-</head>
-<body>
-
-<header>🏢 Office Empire – Realistic Dashboard</header>
-
-<div class="dashboard">
-<div class="panel">
-<h3>Resources</h3>
-<div id="stats"></div>
-<button onclick="buyPhones()">Buy 100 Phones ($1)</button>
-<button onclick="buyAccount('tg')">Buy Telegram ($5)</button>
-<button onclick="buyAccount('ws')">Buy WhatsApp ($7)</button>
-<button onclick="buyGV()">Buy Google Voice ($7)</button>
-
-<h3>Hire</h3>
-<button onclick="hireEmployee('Contact')">Hire Contact</button>
-<button onclick="hireEmployee('Sales')">Hire Sales</button>
-<button onclick="hireEmployee('Team Leader')">Hire Team Leader</button>
-<button onclick="hireEmployee('Manager')">Hire Manager</button>
-
-<button onclick="showReport()">📊 Live Employee Report</button>
-</div>
-
-<div class="panel">
-<h3>Employees</h3>
-<div id="employees"></div>
-</div>
-</div>
-
-<div class="panel">
-<h3>Top-Up History</h3>
-<div id="history"></div>
-</div>
-
-<div id="popup">
-<div class="modal">
-<div id="popupContent"></div>
-<button onclick="closePopup()">Close</button>
-</div>
-</div>
-
-<div id="report">
-<div class="modal">
-<h3>Employee Live Report</h3>
-<div id="reportContent"></div>
-<button onclick="closeReport()">Close</button>
-</div>
-</div>
-
 <script>
 const SAVE_KEY="office_empire_dashboard_v2";
 let selectedEmployeeIndex=null;
@@ -76,8 +5,8 @@ let selectedEmployeeIndex=null;
 let game={
 cash:1000,phones:500,tg:2,ws:2,gv:0,
 customers:[],history:[],
-monthlyIncome:0,          // ✅ ADDED
-currentMonth:new Date().getMonth(), // ✅ ADDED
+monthlyIncome:0,
+currentMonth:new Date().getMonth(),
 offices:[{employees:[]}],
 lastTick:Date.now(),weekMinutes:0,lastDay:null
 };
@@ -114,12 +43,6 @@ save();update();
 function fireEmployee(index){
 let e=game.offices[0].employees[index];
 let hours=Math.floor((e.workedMinutes+e.otMinutes)/60);
-let msg=`Fire ${e.role}?\nWorked: ${hours}h`;
-if(hours>=1){
-let hourly=salary[e.role]/12;
-msg+=`\nSalary to pay: $${(hours*hourly).toFixed(2)}`;
-}
-if(!confirm(msg))return;
 if(hours>=1){
 let cost=hours*(salary[e.role]/12);
 game.cash-=cost;
@@ -133,7 +56,7 @@ save();update();
 function tick(ts){
 let now=new Date(ts);
 
-if(game.currentMonth!==now.getMonth()){ // ✅ MONTH RESET
+if(game.currentMonth!==now.getMonth()){
 game.currentMonth=now.getMonth();
 game.monthlyIncome=0;
 }
@@ -151,43 +74,20 @@ e.otMinutes+=10;
 game.cash-= (salary[e.role]/12/60)*10*1.5;
 }
 
-/* SALES GENERATE MONTHLY INCOME */
-if(e.role==="Sales" && isWork(ts) && Math.random()<0.12){
-let amount=rand(100,600);
+/* ✅ FIXED SALES INCOME */
+if(e.role==="Sales" && isWork(ts)){
+if(Math.random()<0.35){
+let amount=rand(50,300);
 game.cash+=amount;
-game.monthlyIncome+=amount; // ✅ TRACK MONTHLY
+game.monthlyIncome+=amount;
 e.topup+=amount;
 game.history.unshift(`💰 Sale → $${amount}`);
+}
 }
 });
 
 save();update();
 }
-
-function showPopup(c,a){
-document.getElementById("popupContent").innerHTML=
-`🎉 CONGRATULATIONS<br><br>Customer: ${c}<br>Top-Up: $${a}`;
-document.getElementById("popup").style.display="flex";
-}
-function closePopup(){document.getElementById("popup").style.display="none";}
-
-function showReport(){
-let t="<table><tr><th>Role</th><th>Phones</th><th>New</th><th>Used</th><th>Top-Up</th><th>Hours</th></tr>";
-game.offices[0].employees.forEach(e=>{
-t+=`<tr>
-<td>${e.role}</td>
-<td>${e.phonesUsed}</td>
-<td>${e.newCustomers}</td>
-<td>${e.customersUsed}</td>
-<td>$${e.topup}</td>
-<td>${Math.floor(e.workedMinutes/60)}h + OT ${Math.floor(e.otMinutes/60)}h</td>
-</tr>`;
-});
-t+="</table>";
-document.getElementById("reportContent").innerHTML=t;
-document.getElementById("report").style.display="flex";
-}
-function closeReport(){document.getElementById("report").style.display="none";}
 
 function update(){
 document.getElementById("stats").innerHTML=
@@ -211,11 +111,6 @@ onclick="selectedEmployeeIndex=${i};update()">
 <b>${e.role}</b><br>
 ⏱ ${Math.floor(e.workedMinutes/60)}h + OT ${Math.floor(e.otMinutes/60)}h<br>
 ${status}
-${selectedEmployeeIndex===i?`
-<button onclick="event.stopPropagation();toggleOT(${i})">
-${e.otEnabled?'Disable OT':'Enable OT'}
-</button>
-<button class="fire" onclick="event.stopPropagation();fireEmployee(${i})">🔥 Fire</button>`:""}
 </div>`;
 }).join("");
 
@@ -227,5 +122,3 @@ function load(){let s=localStorage.getItem(SAVE_KEY);if(s)game=JSON.parse(s);}
 load();update();
 setInterval(()=>tick(Date.now()),600000);
 </script>
-</body>
-</html>
