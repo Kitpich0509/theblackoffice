@@ -70,166 +70,159 @@ td,th{border:1px solid #374151;padding:6px;text-align:center}
 </div>
 
 <script>
-const SAVE_KEY="office_empire_dashboard_v3";
+const SAVE_KEY="office_empire_dashboard_v2";
 let selectedEmployeeIndex=null;
 
 let game={
-  cash:1000, phones:500, tg:2, ws:2, gv:0,
-  customers:[], history:[],
-  offices:[{employees:[]}],
-  lastTick:Date.now(), weekMinutes:0, monthIncome:0, lastDay:null
+cash:1000,phones:500,tg:2,ws:2,gv:0,
+customers:[],history:[],
+monthIncome:0,lastMonth:new Date().getMonth(),
+offices:[{employees:[]}],
+lastTick:Date.now(),weekMinutes:0,lastDay:null
 };
 
 const salary={Contact:600,Sales:800,"Team Leader":1100,Manager:1500};
-const workStart=4, workEnd=16, otEnd=17;
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function hour(ts){return new Date(ts).getHours();}
-function isWork(ts){let h=hour(ts); return h>=workStart && h<workEnd;}
-function isOT(ts){let h=hour(ts); return h>=workEnd && h<otEnd;}
+function isWork(ts){let h=hour(ts);return h>=4&&h<16;}
+function isOT(ts){let h=hour(ts);return h>=16&&h<17;}
 
 function buyPhones(){if(game.cash>=1){game.cash--;game.phones+=100;save();update();}}
 function buyAccount(t){let c=t==="tg"?5:7;if(game.cash>=c){game.cash-=c;game[t]++;save();update();}}
 function buyGV(){if(game.cash>=7){game.cash-=7;game.gv++;save();update();}}
 
 function hireEmployee(role){
-  game.offices[0].employees.push({
-    role,
-    phonesUsed:0, phoneBuffer:0,
-    newCustomers:0, customersUsed:0,
-    topup:0,
-    workedMinutes:0,
-    otMinutes:0,
-    otEnabled:false
-  });
-  save();update();
+game.offices[0].employees.push({
+role,
+phonesUsed:0,phoneBuffer:0,
+newCustomers:0,customersUsed:0,
+topup:0,
+workedMinutes:0,
+otMinutes:0,
+otEnabled:false
+});
+save();update();
 }
 
 function toggleOT(i){
-  game.offices[0].employees[i].otEnabled=!game.offices[0].employees[i].otEnabled;
-  save();update();
+game.offices[0].employees[i].otEnabled=!game.offices[0].employees[i].otEnabled;
+save();update();
 }
 
 function fireEmployee(index){
-  let e=game.offices[0].employees[index];
-  let totalHours=Math.floor((e.workedMinutes+e.otMinutes)/60);
-  let msg=`Fire ${e.role}?\nWorked: ${totalHours}h`;
-  if(totalHours>=1){
-    let hourly=salary[e.role]/12;
-    msg+=`\nSalary to pay: $${(totalHours*hourly).toFixed(2)}`;
-  }
-  if(!confirm(msg)) return;
-  if(totalHours>=1){
-    let hourly=salary[e.role]/12;
-    let cost=totalHours*hourly;
-    game.cash-=cost;
-    game.history.unshift(`🔥 Fired ${e.role} → Paid $${cost.toFixed(2)}`);
-  }
-  game.offices[0].employees.splice(index,1);
-  selectedEmployeeIndex=null;
-  save();update();
+let e=game.offices[0].employees[index];
+let hours=Math.floor((e.workedMinutes+e.otMinutes)/60);
+let msg=`Fire ${e.role}?\nWorked: ${hours}h`;
+if(hours>=1){
+let hourly=salary[e.role]/12;
+msg+=`\nSalary to pay: $${(hours*hourly).toFixed(2)}`;
+}
+if(!confirm(msg))return;
+if(hours>=1){
+let cost=hours*(salary[e.role]/12);
+game.cash-=cost;
+game.history.unshift(`🔥 Fired ${e.role} → Paid $${cost.toFixed(2)}`);
+}
+game.offices[0].employees.splice(index,1);
+selectedEmployeeIndex=null;
+save();update();
 }
 
 function tick(ts){
-  // Reset OT at new day
-  let day=new Date(ts).toDateString();
-  if(game.lastDay!==day){
-    game.lastDay=day;
-    game.offices[0].employees.forEach(e=>e.otMinutes=0);
-  }
+let now=new Date(ts);
 
-  game.offices[0].employees.forEach(e=>{
-    if(isWork(ts)) e.workedMinutes+=10;
-    else if(isOT(ts) && e.otEnabled && e.otMinutes<60){
-      e.otMinutes+=10;
-      let hourly=salary[e.role]/12;
-      game.cash-= (hourly/60)*10*1.5; // OT cost per 10 minutes
-    }
+/* monthly reset */
+if(game.lastMonth!==now.getMonth()){
+game.lastMonth=now.getMonth();
+game.monthIncome=0;
+}
 
-    // Contact work
-    if(e.role==="Contact"){
-      let used=rand(5,15);
-      if(game.phones>=used){
-        game.phones-=used; e.phonesUsed+=used; e.phoneBuffer+=used; e.gvUsed++;
-        if(e.phoneBuffer>=rand(100,200)){ e.phoneBuffer=0; game.customers.push({}); e.newCustomers++; }
-      }
-    }
+let day=now.toDateString();
+if(game.lastDay!==day){
+game.lastDay=day;
+game.offices[0].employees.forEach(e=>e.otMinutes=0);
+}
 
-    // Sales work
-    if(e.role==="Sales" && game.customers.length>=25){
-      let sales=rand(1,2);
-      game.customers.splice(0,25);
-      e.customersUsed+=25;
-      for(let i=0;i<sales;i++){
-        let amount=rand(100,2000);
-        let cust="Customer"+rand(1000,9999);
-        game.cash+=amount; e.topup+=amount; game.monthIncome+=amount;
-        game.history.unshift(`${cust} → $${amount}`);
-        showPopup(cust,amount);
-      }
-    }
-  });
+/* work & OT */
+game.offices[0].employees.forEach(e=>{
+if(isWork(ts)) e.workedMinutes+=10;
+else if(isOT(ts)&&e.otEnabled&&e.otMinutes<60){
+e.otMinutes+=10;
+game.cash-=(salary[e.role]/12/60)*10*1.5;
+}
+});
 
-  // Weekly salary deduction
-  game.weekMinutes+=10;
-  if(game.weekMinutes>=10080){
-    game.weekMinutes=0;
-    game.offices[0].employees.forEach(e=>game.cash-=salary[e.role]||0);
-  }
+/* SALES LOGIC (monthly income source) */
+game.offices[0].employees.forEach(e=>{
+if(e.role==="Sales" && isWork(ts) && Math.random()<0.15){
+let amount=rand(50,500);
+game.cash+=amount;
+game.monthIncome+=amount;
+e.topup+=amount;
+game.history.unshift(`💰 Sale → $${amount}`);
+}
+});
 
-  save();update();
+save();update();
 }
 
 function showPopup(c,a){
-  document.getElementById("popupContent").innerHTML=`🎉 CONGRATULATIONS<br><br>Customer: ${c}<br>Top-Up: $${a}`;
-  document.getElementById("popup").style.display="flex";
+document.getElementById("popupContent").innerHTML=
+`🎉 CONGRATULATIONS<br><br>Customer: ${c}<br>Top-Up: $${a}`;
+document.getElementById("popup").style.display="flex";
 }
 function closePopup(){document.getElementById("popup").style.display="none";}
 
 function showReport(){
-  let t="<table><tr><th>Role</th><th>Phones</th><th>New</th><th>Used</th><th>Top-Up</th><th>Hours</th><th>Status</th></tr>";
-  game.offices[0].employees.forEach(e=>{
-    let status=isWork(Date.now())?'Working':(isOT(Date.now())&&e.otEnabled?'Overtime':'Resting');
-    t+=`<tr>
-      <td>${e.role}</td>
-      <td>${e.phonesUsed}</td>
-      <td>${e.newCustomers}</td>
-      <td>${e.customersUsed}</td>
-      <td>$${e.topup}</td>
-      <td>${Math.floor(e.workedMinutes/60)}h + OT ${Math.floor(e.otMinutes/60)}h</td>
-      <td>${status}</td>
-    </tr>`;
-  });
-  t+="</table>";
-  document.getElementById("reportContent").innerHTML=t;
-  document.getElementById("report").style.display="flex";
+let t="<table><tr><th>Role</th><th>Phones</th><th>New</th><th>Used</th><th>Top-Up</th><th>Hours</th></tr>";
+game.offices[0].employees.forEach(e=>{
+t+=`<tr>
+<td>${e.role}</td>
+<td>${e.phonesUsed}</td>
+<td>${e.newCustomers}</td>
+<td>${e.customersUsed}</td>
+<td>$${e.topup}</td>
+<td>${Math.floor(e.workedMinutes/60)}h + OT ${Math.floor(e.otMinutes/60)}h</td>
+</tr>`;
+});
+t+="</table>";
+document.getElementById("reportContent").innerHTML=t;
+document.getElementById("report").style.display="flex";
 }
 function closeReport(){document.getElementById("report").style.display="none";}
 
 function update(){
-  document.getElementById("stats").innerHTML=
-    `💵 Cash: $${game.cash.toFixed(2)}<br>
-     📞 Phones: ${game.phones}<br>
-     🟢 TG: ${game.tg} | 🔵 WS: ${game.ws}<br>
-     📱 GV: ${game.gv}<br>
-     👥 Customers: ${game.customers.length}<br>
-     📈 Monthly Income: $${game.monthIncome.toFixed(2)}`;
+document.getElementById("stats").innerHTML=
+`💵 Cash: $${game.cash.toFixed(2)}<br>
+📞 Phones: ${game.phones}<br>
+🟢 TG: ${game.tg} | 🔵 WS: ${game.ws}<br>
+📱 GV: ${game.gv}<br>
+👥 Customers: ${game.customers.length}<br>
+📈 Monthly Income: $${game.monthIncome.toFixed(2)}`;
 
-  document.getElementById("employees").innerHTML=
-    game.offices[0].employees.map((e,i)=>{
-      let status=isWork(Date.now())?'<span class="status work">🟢 Working</span>':
-                 (isOT(Date.now())&&e.otEnabled?'<span class="status ot">🔥 Overtime</span>':'<span class="status rest">🌙 Resting</span>');
-      return `<div class="card ${selectedEmployeeIndex===i?'selected':''}" onclick="selectedEmployeeIndex=${i};update()">
-        <b>${e.role}</b><br>
-        ⏱ ${Math.floor(e.workedMinutes/60)}h + OT ${Math.floor(e.otMinutes/60)}h<br>
-        ${status}<br>
-        ${selectedEmployeeIndex===i?`
-          <button onclick="event.stopPropagation();toggleOT(${i})">${e.otEnabled?'Disable OT':'Enable OT'}</button>
-          <button class="fire" onclick="event.stopPropagation();fireEmployee(${i})">🔥 Fire</button>`:""}
-      </div>`;
-    }).join("");
+document.getElementById("employees").innerHTML=
+game.offices[0].employees.map((e,i)=>{
+let status=isWork(Date.now())?
+'<span class="status work">🟢 Working</span>':
+(isOT(Date.now())&&e.otEnabled?
+'<span class="status ot">🔥 Overtime</span>':
+'<span class="status rest">🌙 Resting</span>');
+return`
+<div class="card ${selectedEmployeeIndex===i?'selected':''}"
+onclick="selectedEmployeeIndex=${i};update()">
+<b>${e.role}</b><br>
+⏱ ${Math.floor(e.workedMinutes/60)}h + OT ${Math.floor(e.otMinutes/60)}h<br>
+${status}
+${selectedEmployeeIndex===i?`
+<button onclick="event.stopPropagation();toggleOT(${i})">
+${e.otEnabled?'Disable OT':'Enable OT'}
+</button>
+<button class="fire" onclick="event.stopPropagation();fireEmployee(${i})">🔥 Fire</button>`:""}
+</div>`;
+}).join("");
 
-  document.getElementById("history").innerHTML=game.history.slice(0,10).join("<br>");
+document.getElementById("history").innerHTML=game.history.slice(0,10).join("<br>");
 }
 
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(game));}
