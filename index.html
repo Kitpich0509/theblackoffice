@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Office Empire – Dashboard</title>
+<style>
+body{margin:0;background:#0b0e13;color:#e6f1ff;font-family:system-ui}
+header{background:#121826;padding:15px;font-size:20px}
+.dashboard{display:grid;grid-template-columns:1fr 2fr;gap:15px;padding:15px}
+.panel{background:#121826;padding:15px;border-radius:8px}
+button{background:#1f2937;color:#e6f1ff;border:1px solid #374151;padding:8px;margin:4px 0;width:100%}
+.card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{border:1px solid #374151;padding:6px;text-align:center}
+#popup,#report{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
+.modal{background:#121826;padding:20px;border-radius:8px;max-height:85vh;overflow:auto}
+</style>
+</head>
+<body>
+
+<header>🏢 Office Empire – Realistic Dashboard</header>
+
+<div class="dashboard">
+<div class="panel">
+<h3>Resources</h3>
+<div id="stats"></div>
+<button onclick="buyPhones()">Buy 100 Phones ($1)</button>
+<button onclick="buyAccount('tg')">Buy Telegram ($5)</button>
+<button onclick="buyAccount('ws')">Buy WhatsApp ($7)</button>
+<button onclick="buyGV()">Buy Google Voice ($7)</button>
+
+<h3>Hire</h3>
+<button onclick="hireEmployee('Contact')">Hire Contact</button>
+<button onclick="hireEmployee('Sales')">Hire Sales</button>
+<button onclick="hireEmployee('Team Leader')">Hire Team Leader</button>
+<button onclick="hireEmployee('Manager')">Hire Manager</button>
+
+<button onclick="showReport()">📊 Live Employee Report</button>
+</div>
+
+<div class="panel">
+<h3>Employees</h3>
+<div id="employees"></div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Top-Up History</h3>
+<div id="history"></div>
+</div>
+
+<div id="popup">
+<div class="modal">
+<div id="popupContent"></div>
+<button onclick="closePopup()">Close</button>
+</div>
+</div>
+
+<div id="report">
+<div class="modal">
+<h3>Employee Live Report</h3>
+<div id="reportContent"></div>
+<button onclick="closeReport()">Close</button>
+</div>
+</div>
+
+<script>
+const SAVE_KEY="office_empire_dashboard_v2";
+let game={
+cash:1000,phones:500,tg:2,ws:2,gv:0,
+customers:[],history:[],
+offices:[{employees:[]}],
+lastTick:Date.now(),weekMinutes:0
+};
+
+const salary={Contact:700,Sales:900,"Team Leader":1300,Manager:2000};
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function isWork(ts){
+  let h = new Date(ts).getHours();
+  return h >= 4 && h < 16; // 4AM to 4PM
+}
+
+
+function buyPhones(){if(game.cash>=1){game.cash--;game.phones+=100;save();update();}}
+function buyAccount(t){let c=t==="tg"?5:7;if(game.cash>=c){game.cash-=c;game[t]++;save();update();}}
+function buyGV(){if(game.cash>=7){game.cash-=7;game.gv++;save();update();}}
+
+function hireEmployee(role){
+game.offices[0].employees.push({
+role,phonesUsed:0,phoneBuffer:0,
+newCustomers:0,customersUsed:0,
+topup:0,tgUsed:0,wsUsed:0,gvUsed:0
+});
+save();update();
+}
+
+function tick(ts){
+if(!isWork(ts)) return;
+
+game.offices[0].employees.forEach(e=>{
+if(e.role==="Contact"){
+let used=rand(5,15);
+if(game.phones>=used){
+game.phones-=used;
+e.phonesUsed+=used;
+e.phoneBuffer+=used;
+e.gvUsed++;
+
+if(e.phoneBuffer>=rand(100,200)){
+e.phoneBuffer=0;
+game.customers.push({name:"Customer"+rand(1000,9999)});
+e.newCustomers++;
+}
+}
+}
+
+if(e.role==="Sales" && game.customers.length>=25){
+let sales=rand(1,2);
+game.customers.splice(0,25);
+e.customersUsed+=25;
+
+for(let i=0;i<sales;i++){
+let amount=rand(100,2000);
+let cust="Customer"+rand(1000,9999);
+game.cash+=amount;
+e.topup+=amount;
+game.history.unshift(`${cust} → $${amount}`);
+showPopup(cust,amount);
+}
+}
+});
+
+game.weekMinutes+=10;
+if(game.weekMinutes>=10080){
+game.weekMinutes=0;
+game.offices[0].employees.forEach(e=>game.cash-=salary[e.role]||0);
+}
+
+save();update();
+}
+
+function showPopup(c,a){
+document.getElementById("popupContent").innerHTML=
+`🎉 CONGRATULATIONS<br><br>Customer: ${c}<br>Top-Up: $${a}`;
+document.getElementById("popup").style.display="flex";
+}
+function closePopup(){document.getElementById("popup").style.display="none";}
+
+function showReport(){
+let t="<table><tr><th>Role</th><th>Phones</th><th>New Cust</th><th>Cust Used</th><th>Top-Up</th><th>GV</th></tr>";
+game.offices[0].employees.forEach(e=>{
+t+=`<tr><td>${e.role}</td><td>${e.phonesUsed}</td><td>${e.newCustomers}</td><td>${e.customersUsed}</td><td>$${e.topup}</td><td>${e.gvUsed}</td></tr>`;
+});
+t+="</table>";
+document.getElementById("reportContent").innerHTML=t;
+document.getElementById("report").style.display="flex";
+}
+function closeReport(){document.getElementById("report").style.display="none";}
+
+function update(){
+  document.getElementById("stats").innerHTML =
+  `💵 Cash: $${game.cash.toFixed(2)}<br>
+   📞 Phones: ${game.phones}<br>
+   🟢 Telegram: ${game.tg}<br>
+   🔵 WhatsApp: ${game.ws}<br>
+   📱 Google Voice: ${game.gv}<br>
+   👥 Customers: ${game.customers.length}`;
+
+  document.getElementById("employees").innerHTML =
+    game.offices[0].employees
+      .map(e=>`<div class="card">${e.role}</div>`)
+      .join("");
+
+  document.getElementById("history").innerHTML =
+    game.history.slice(0,10).join("<br>");
+}
+
+
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(game));}
+function load(){let s=localStorage.getItem(SAVE_KEY);if(s)game=JSON.parse(s);}
+
+load();update();
+setInterval(()=>tick(Date.now()),600000);
+</script>
+</body>
+</html>
