@@ -76,7 +76,8 @@ let selectedEmployeeIndex=null;
 let game={
 cash:1000,phones:500,tg:2,ws:2,gv:0,
 customers:[],history:[],
-monthIncome:0,lastMonth:new Date().getMonth(),
+monthlyIncome:0,
+lastMonth:new Date().getMonth(),
 offices:[{employees:[]}],
 lastTick:Date.now(),weekMinutes:0,lastDay:null
 };
@@ -135,7 +136,7 @@ let now=new Date(ts);
 /* monthly reset */
 if(game.lastMonth!==now.getMonth()){
 game.lastMonth=now.getMonth();
-game.monthIncome=0;
+game.monthlyIncome=0;
 }
 
 let day=now.toDateString();
@@ -144,21 +145,18 @@ game.lastDay=day;
 game.offices[0].employees.forEach(e=>e.otMinutes=0);
 }
 
-/* work & OT */
 game.offices[0].employees.forEach(e=>{
 if(isWork(ts)) e.workedMinutes+=10;
 else if(isOT(ts)&&e.otEnabled&&e.otMinutes<60){
 e.otMinutes+=10;
-game.cash-=(salary[e.role]/12/60)*10*1.5;
+game.cash-= (salary[e.role]/12/60)*10*1.5;
 }
-});
 
-/* SALES LOGIC (monthly income source) */
-game.offices[0].employees.forEach(e=>{
-if(e.role==="Sales" && isWork(ts) && Math.random()<0.15){
-let amount=rand(50,500);
+/* SALES → MONTHLY INCOME */
+if(e.role==="Sales" && isWork(ts) && Math.random()<0.12){
+let amount=rand(100,800);
 game.cash+=amount;
-game.monthIncome+=amount;
+game.monthlyIncome+=amount;
 e.topup+=amount;
 game.history.unshift(`💰 Sale → $${amount}`);
 }
@@ -199,7 +197,7 @@ document.getElementById("stats").innerHTML=
 🟢 TG: ${game.tg} | 🔵 WS: ${game.ws}<br>
 📱 GV: ${game.gv}<br>
 👥 Customers: ${game.customers.length}<br>
-📈 Monthly Income: $${game.monthIncome.toFixed(2)}`;
+📆 Monthly Income: $${game.monthlyIncome.toFixed(2)}`;
 
 document.getElementById("employees").innerHTML=
 game.offices[0].employees.map((e,i)=>{
