@@ -13,6 +13,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #374151;padding:6px;text-align:center}
 #popup,#report{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
 .modal{background:#121826;padding:20px;border-radius:8px;max-height:85vh;overflow:auto}
+.fire{background:#7f1d1d;border-color:#991b1b}
 </style>
 </head>
 <body>
@@ -76,10 +77,9 @@ const salary={Contact:700,Sales:900,"Team Leader":1300,Manager:2000};
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function isWork(ts){
-  let h = new Date(ts).getHours();
-  return h >= 4 && h < 16; // 4AM to 4PM
+  let h=new Date(ts).getHours();
+  return h>=4 && h<16;
 }
-
 
 function buyPhones(){if(game.cash>=1){game.cash--;game.phones+=100;save();update();}}
 function buyAccount(t){let c=t==="tg"?5:7;if(game.cash>=c){game.cash-=c;game[t]++;save();update();}}
@@ -87,10 +87,25 @@ function buyGV(){if(game.cash>=7){game.cash-=7;game.gv++;save();update();}}
 
 function hireEmployee(role){
 game.offices[0].employees.push({
-role,phonesUsed:0,phoneBuffer:0,
+role,
+phonesUsed:0,phoneBuffer:0,
 newCustomers:0,customersUsed:0,
-topup:0,tgUsed:0,wsUsed:0,gvUsed:0
+topup:0,tgUsed:0,wsUsed:0,gvUsed:0,
+workedMinutes:0
 });
+save();update();
+}
+
+function fireEmployee(index){
+let e=game.offices[0].employees[index];
+let hours=Math.floor(e.workedMinutes/60);
+if(hours>=1){
+let hourly=salary[e.role]/12;
+let cost=hours*hourly;
+game.cash-=cost;
+game.history.unshift(`🔥 Fired ${e.role} → Paid $${cost.toFixed(2)}`);
+}
+game.offices[0].employees.splice(index,1);
 save();update();
 }
 
@@ -98,6 +113,8 @@ function tick(ts){
 if(!isWork(ts)) return;
 
 game.offices[0].employees.forEach(e=>{
+e.workedMinutes+=10;
+
 if(e.role==="Contact"){
 let used=rand(5,15);
 if(game.phones>=used){
@@ -108,7 +125,7 @@ e.gvUsed++;
 
 if(e.phoneBuffer>=rand(100,200)){
 e.phoneBuffer=0;
-game.customers.push({name:"Customer"+rand(1000,9999)});
+game.customers.push({});
 e.newCustomers++;
 }
 }
@@ -147,9 +164,16 @@ document.getElementById("popup").style.display="flex";
 function closePopup(){document.getElementById("popup").style.display="none";}
 
 function showReport(){
-let t="<table><tr><th>Role</th><th>Phones</th><th>New Cust</th><th>Cust Used</th><th>Top-Up</th><th>GV</th></tr>";
+let t="<table><tr><th>Role</th><th>Phones</th><th>New</th><th>Used</th><th>Top-Up</th><th>Hours</th></tr>";
 game.offices[0].employees.forEach(e=>{
-t+=`<tr><td>${e.role}</td><td>${e.phonesUsed}</td><td>${e.newCustomers}</td><td>${e.customersUsed}</td><td>$${e.topup}</td><td>${e.gvUsed}</td></tr>`;
+t+=`<tr>
+<td>${e.role}</td>
+<td>${e.phonesUsed}</td>
+<td>${e.newCustomers}</td>
+<td>${e.customersUsed}</td>
+<td>$${e.topup}</td>
+<td>${Math.floor(e.workedMinutes/60)}</td>
+</tr>`;
 });
 t+="</table>";
 document.getElementById("reportContent").innerHTML=t;
@@ -158,23 +182,24 @@ document.getElementById("report").style.display="flex";
 function closeReport(){document.getElementById("report").style.display="none";}
 
 function update(){
-  document.getElementById("stats").innerHTML =
-  `💵 Cash: $${game.cash.toFixed(2)}<br>
-   📞 Phones: ${game.phones}<br>
-   🟢 Telegram: ${game.tg}<br>
-   🔵 WhatsApp: ${game.ws}<br>
-   📱 Google Voice: ${game.gv}<br>
-   👥 Customers: ${game.customers.length}`;
+document.getElementById("stats").innerHTML=
+`💵 Cash: $${game.cash.toFixed(2)}<br>
+📞 Phones: ${game.phones}<br>
+🟢 Telegram: ${game.tg}<br>
+🔵 WhatsApp: ${game.ws}<br>
+📱 Google Voice: ${game.gv}<br>
+👥 Customers: ${game.customers.length}`;
 
-  document.getElementById("employees").innerHTML =
-    game.offices[0].employees
-      .map(e=>`<div class="card">${e.role}</div>`)
-      .join("");
+document.getElementById("employees").innerHTML=
+game.offices[0].employees.map((e,i)=>`
+<div class="card">
+${e.role}<br>
+⏱ ${Math.floor(e.workedMinutes/60)}h
+<button class="fire" onclick="fireEmployee(${i})">🔥 Fire</button>
+</div>`).join("");
 
-  document.getElementById("history").innerHTML =
-    game.history.slice(0,10).join("<br>");
+document.getElementById("history").innerHTML=game.history.slice(0,10).join("<br>");
 }
-
 
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(game));}
 function load(){let s=localStorage.getItem(SAVE_KEY);if(s)game=JSON.parse(s);}
