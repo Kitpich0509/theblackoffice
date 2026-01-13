@@ -8,7 +8,8 @@ header{background:#121826;padding:15px;font-size:20px}
 .dashboard{display:grid;grid-template-columns:1fr 2fr;gap:15px;padding:15px}
 .panel{background:#121826;padding:15px;border-radius:8px}
 button{background:#1f2937;color:#e6f1ff;border:1px solid #374151;padding:8px;margin:4px 0;width:100%}
-.card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px}
+.card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px;cursor:pointer}
+.card.selected{outline:2px solid #38bdf8}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #374151;padding:6px;text-align:center}
 #popup,#report{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
@@ -66,6 +67,8 @@ td,th{border:1px solid #374151;padding:6px;text-align:center}
 
 <script>
 const SAVE_KEY="office_empire_dashboard_v2";
+let selectedEmployeeIndex=null;
+
 let game={
 cash:1000,phones:500,tg:2,ws:2,gv:0,
 customers:[],history:[],
@@ -73,7 +76,7 @@ offices:[{employees:[]}],
 lastTick:Date.now(),weekMinutes:0
 };
 
-const salary={Contact:700,Sales:900,"Team Leader":1300,Manager:2000};
+const salary={Contact:600,Sales:800,"Team Leader":1100,Manager:1500};
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function isWork(ts){
@@ -99,13 +102,24 @@ save();update();
 function fireEmployee(index){
 let e=game.offices[0].employees[index];
 let hours=Math.floor(e.workedMinutes/60);
+
+let msg=`Fire ${e.role}?\nWorked: ${hours}h`;
+if(hours>=1){
+let hourly=salary[e.role]/12;
+msg+=`\nSalary to pay: $${(hours*hourly).toFixed(2)}`;
+}
+
+if(!confirm(msg)) return;
+
 if(hours>=1){
 let hourly=salary[e.role]/12;
 let cost=hours*hourly;
 game.cash-=cost;
 game.history.unshift(`🔥 Fired ${e.role} → Paid $${cost.toFixed(2)}`);
 }
+
 game.offices[0].employees.splice(index,1);
+selectedEmployeeIndex=null;
 save();update();
 }
 
@@ -192,10 +206,12 @@ document.getElementById("stats").innerHTML=
 
 document.getElementById("employees").innerHTML=
 game.offices[0].employees.map((e,i)=>`
-<div class="card">
+<div class="card ${selectedEmployeeIndex===i?'selected':''}"
+onclick="selectedEmployeeIndex=${i};update()">
 ${e.role}<br>
 ⏱ ${Math.floor(e.workedMinutes/60)}h
-<button class="fire" onclick="fireEmployee(${i})">🔥 Fire</button>
+${selectedEmployeeIndex===i?
+`<button class="fire" onclick="event.stopPropagation();fireEmployee(${i})">🔥 Fire</button>`:""}
 </div>`).join("");
 
 document.getElementById("history").innerHTML=game.history.slice(0,10).join("<br>");
