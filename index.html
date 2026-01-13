@@ -1,3 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Office Empire – Dashboard</title>
+<style>
+body{margin:0;background:#0b0e13;color:#e6f1ff;font-family:system-ui}
+header{background:#121826;padding:15px;font-size:20px}
+.dashboard{display:grid;grid-template-columns:1fr 2fr;gap:15px;padding:15px}
+.panel{background:#121826;padding:15px;border-radius:8px}
+button{background:#1f2937;color:#e6f1ff;border:1px solid #374151;padding:8px;margin:4px 0;width:100%}
+.card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px;cursor:pointer}
+.card.selected{outline:2px solid #38bdf8}
+.status{font-size:12px;margin-top:4px}
+.work{color:#22c55e}
+.rest{color:#94a3b8}
+.ot{color:#facc15}
+.fire{background:#7f1d1d;border-color:#991b1b}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{border:1px solid #374151;padding:6px;text-align:center}
+#popup,#report{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
+.modal{background:#121826;padding:20px;border-radius:8px;max-height:85vh;overflow:auto}
+</style>
+</head>
+<body>
+
+<header>🏢 Office Empire – Realistic Dashboard</header>
+
+<div class="dashboard">
+<div class="panel">
+<h3>Resources</h3>
+<div id="stats"></div>
+<button onclick="buyPhones()">Buy 100 Phones ($1)</button>
+<button onclick="buyAccount('tg')">Buy Telegram ($5)</button>
+<button onclick="buyAccount('ws')">Buy WhatsApp ($7)</button>
+<button onclick="buyGV()">Buy Google Voice ($7)</button>
+
+<h3>Hire</h3>
+<button onclick="hireEmployee('Contact')">Hire Contact</button>
+<button onclick="hireEmployee('Sales')">Hire Sales</button>
+<button onclick="hireEmployee('Team Leader')">Hire Team Leader</button>
+<button onclick="hireEmployee('Manager')">Hire Manager</button>
+
+<button onclick="showReport()">📊 Live Employee Report</button>
+</div>
+
+<div class="panel">
+<h3>Employees</h3>
+<div id="employees"></div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Top-Up History</h3>
+<div id="history"></div>
+</div>
+
+<div id="popup">
+<div class="modal">
+<div id="popupContent"></div>
+<button onclick="closePopup()">Close</button>
+</div>
+</div>
+
+<div id="report">
+<div class="modal">
+<h3>Employee Live Report</h3>
+<div id="reportContent"></div>
+<button onclick="closeReport()">Close</button>
+</div>
+</div>
+
 <script>
 const SAVE_KEY="office_empire_dashboard_v2";
 let selectedEmployeeIndex=null;
@@ -122,3 +193,6 @@ function load(){let s=localStorage.getItem(SAVE_KEY);if(s)game=JSON.parse(s);}
 load();update();
 setInterval(()=>tick(Date.now()),600000);
 </script>
+
+</body>
+</html>
