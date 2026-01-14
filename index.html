@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>Office Empire – Dashboard</title>
-<style>
+<style> 
 body{margin:0;background:#0b0e13;color:#e6f1ff;font-family:system-ui}
 header{background:#121826;padding:15px;font-size:20px}
 .dashboard{display:grid;grid-template-columns:1fr 2fr;gap:15px;padding:15px}
@@ -110,50 +110,74 @@ save();update();
 }
 
 function tick(ts){
-if(!isWork(ts)) return;
+  if(!isWork(ts)) return;
 
-game.offices[0].employees.forEach(e=>{
-e.workedMinutes+=10;
+  game.offices[0].employees.forEach(e=>{
+    e.workedMinutes += 10;
 
-if(e.role==="Contact"){
-let used=rand(5,15);
-if(game.phones>=used){
-game.phones-=used;
-e.phonesUsed+=used;
-e.phoneBuffer+=used;
-e.gvUsed++;
+    // ===== CONTACT ROLE =====
+    if(e.role==="Contact"){
+      let used = rand(5,15);
+      if(game.phones >= used){
+        game.phones -= used;
+        e.phonesUsed += used;
+        e.phoneBuffer += used;
+        e.gvUsed++;
 
-if(e.phoneBuffer>=rand(100,200)){
-e.phoneBuffer=0;
-game.customers.push({});
-e.newCustomers++;
-}
-}
-}
+        if(e.phoneBuffer >= rand(100,200)){
+          e.phoneBuffer = 0;
+          game.customers.push({});
+          e.newCustomers++;
+        }
+      }
+    }
 
-if(e.role==="Sales" && game.customers.length>=25){
-let sales=rand(1,2);
-game.customers.splice(0,25);
-e.customersUsed+=25;
+    // ===== SALES ROLE (FIXED, SAFE) =====
+    if(e.role === "Sales" && game.customers.length > 0){
 
-for(let i=0;i<sales;i++){
-let amount=rand(100,2000);
-let cust="Customer"+rand(1000,9999);
-game.cash+=amount;
-e.topup+=amount;
-game.history.unshift(`${cust} → $${amount}`);
-showPopup(cust,amount);
-}
-}
-});
+      if(!e.salesTimer) e.salesTimer = 0;
+      e.salesTimer += 10;
 
-game.weekMinutes+=10;
-if(game.weekMinutes>=10080){
-game.weekMinutes=0;
-game.offices[0].employees.forEach(e=>game.cash-=salary[e.role]||0);
-}
+      // only act every 15 minutes
+      if(e.salesTimer >= 15){
+        e.salesTimer = 0;
 
-save();update();
+        // use 1 customer
+        game.customers.splice(0,1);
+        e.customersUsed++;
+
+        // random success chance
+        if(Math.random() < 0.12){
+          e.successCount = (e.successCount || 0) + 1;
+        }
+
+        // payout every 25 customers USED
+        if(e.customersUsed % 25 === 0){
+          let sales = rand(1,2);
+          for(let i=0;i<sales;i++){
+            let amount = rand(100,2000);
+            let cust = "Customer" + rand(1000,9999);
+            game.cash += amount;
+            e.topup += amount;
+            game.history.unshift(`${cust} → $${amount}`);
+            showPopup(cust, amount);
+          }
+        }
+      }
+    }
+  });
+
+  // ===== WEEKLY SALARY =====
+  game.weekMinutes += 10;
+  if(game.weekMinutes >= 10080){
+    game.weekMinutes = 0;
+    game.offices[0].employees.forEach(e=>{
+      game.cash -= salary[e.role] || 0;
+    });
+  }
+
+  save();
+  update();
 }
 
 function showPopup(c,a){
