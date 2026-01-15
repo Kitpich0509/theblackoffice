@@ -76,6 +76,17 @@ lastTick:Date.now(),weekMinutes:0
 const salary={Contact:700,Sales:900,"Team Leader":1300,Manager:2000};
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  function chance(p){
+  return Math.random() < p;
+}
+
+function banAccount(type){
+  if(game[type] > 0){
+    game[type]--;
+    game.history.unshift(`🚫 ${type.toUpperCase()} account banned`);
+  }
+}
+
 function isWork(ts){
   let h=new Date(ts).getHours();
   return h>=4 && h<16;
@@ -124,6 +135,8 @@ function tick(ts){
         e.phoneBuffer += used;
         e.gvUsed++;
 
+        if(chance(0.004)) banAccount("gv");
+
         if(e.phoneBuffer >= rand(100,200)){
           e.phoneBuffer = 0;
           game.customers.push({});
@@ -132,26 +145,27 @@ function tick(ts){
       }
     }
 
-    // ===== SALES ROLE (FIXED, SAFE) =====
+    // ===== SALES ROLE =====
     if(e.role === "Sales" && game.customers.length > 0){
+
+      if(game.tg + game.ws <= 0) return;
 
       if(!e.salesTimer) e.salesTimer = 0;
       e.salesTimer += 10;
 
-      // only act every 15 minutes
       if(e.salesTimer >= 15){
         e.salesTimer = 0;
 
-        // use 1 customer
         game.customers.splice(0,1);
         e.customersUsed++;
 
-        // random success chance
+        if(chance(0.006)) banAccount("tg");
+        if(chance(0.008)) banAccount("ws");
+
         if(Math.random() < 0.12){
           e.successCount = (e.successCount || 0) + 1;
         }
 
-        // payout every 25 customers USED
         if(e.customersUsed % 25 === 0){
           let sales = rand(1,2);
           for(let i=0;i<sales;i++){
@@ -165,7 +179,8 @@ function tick(ts){
         }
       }
     }
-  });
+
+  }); // ✅ THIS WAS MISSING
 
   // ===== WEEKLY SALARY =====
   game.weekMinutes += 10;
@@ -179,6 +194,7 @@ function tick(ts){
   save();
   update();
 }
+
 
 function showPopup(c,a){
 document.getElementById("popupContent").innerHTML=
