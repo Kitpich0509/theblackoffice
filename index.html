@@ -331,7 +331,11 @@ ${e.role}<br>
 document.getElementById("history").innerHTML=game.history.slice(0,10).join("<br>");
 }
 
-function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(game));}
+function save(){
+  game.lastTick = Date.now();
+  localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+}
+
 function load(){
   let s = localStorage.getItem(SAVE_KEY);
   if(s){
@@ -354,8 +358,28 @@ function load(){
   }
 }
 
+function simulateOffline(){
+  let now = Date.now();
+  let diff = now - (game.lastTick || now);
 
-load();update();
+  let minutes = Math.floor(diff / 600000); // 10 min ticks
+  minutes = Math.min(minutes, 288); // ⛔ max 48 hours
+
+  if(minutes <= 0) return;
+
+  for(let i = 0; i < minutes; i++){
+    tick(game.lastTick + i * 600000);
+  }
+
+  game.history.unshift(
+    `⏳ Offline Progress: ${Math.floor(minutes*10/60)} hours simulated`
+  );
+}
+
+load();
+simulateOffline();
+update();
+
 setInterval(()=>tick(Date.now()),600000);
 </script>
 </body>
