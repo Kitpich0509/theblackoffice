@@ -332,7 +332,28 @@ document.getElementById("history").innerHTML=game.history.slice(0,10).join("<br>
 }
 
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(game));}
-function load(){let s=localStorage.getItem(SAVE_KEY);if(s)game=JSON.parse(s);}
+function load(){
+  let s = localStorage.getItem(SAVE_KEY);
+  if(s){
+    game = JSON.parse(s);
+
+    // 🔧 FIX OLD SAVES
+    if(!game.expense){
+      game.expense = {
+        phones: 0,
+        gv: 0,
+        tg: 0,
+        ws: 0,
+        salary: 0
+      };
+    }
+
+    if(game.totalIncome === undefined){
+      game.totalIncome = 0;
+    }
+  }
+}
+
 
 load();update();
 setInterval(()=>tick(Date.now()),600000);
