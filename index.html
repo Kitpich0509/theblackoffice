@@ -36,6 +36,8 @@ td,th{border:1px solid #374151;padding:6px;text-align:center}
 <button onclick="hireEmployee('Manager')">Hire Manager</button>
 
 <button onclick="showReport()">📊 Live Employee Report</button>
+  <button onclick="showFinance()">💰 Finance Summary</button>
+
 </div>
 
 <div class="panel">
@@ -70,7 +72,16 @@ let game={
 cash:1000,phones:500,tg:2,ws:2,gv:0,
 customers:[],history:[],
 offices:[{employees:[]}],
-lastTick:Date.now(),weekMinutes:0
+lastTick:Date.now(),weekMinutes:0,
+
+totalIncome:0,
+expense:{
+  phones:0,
+  gv:0,
+  tg:0,
+  ws:0,
+  salary:0
+}
 };
 
 const salary={Contact:700,Sales:900,"Team Leader":1300,Manager:2000};
@@ -92,9 +103,34 @@ function isWork(ts){
   return h>=4 && h<16;
 }
 
-function buyPhones(){if(game.cash>=1){game.cash--;game.phones+=100;save();update();}}
-function buyAccount(t){let c=t==="tg"?5:7;if(game.cash>=c){game.cash-=c;game[t]++;save();update();}}
-function buyGV(){if(game.cash>=7){game.cash-=7;game.gv++;save();update();}}
+function buyPhones(){
+  if(game.cash>=1){
+    game.cash--;
+    game.phones+=100;
+    game.expense.phones += 1; // ✅ ADD
+    save();update();
+  }
+}
+
+function buyAccount(t){
+  let c=t==="tg"?5:7;
+  if(game.cash>=c){
+    game.cash-=c;
+    game[t]++;
+    game.expense[t] += c; // ✅ ADD
+    save();update();
+  }
+}
+
+function buyGV(){
+  if(game.cash>=7){
+    game.cash-=7;
+    game.gv++;
+    game.expense.gv += 7; // ✅ ADD
+    save();update();
+  }
+}
+
 
 function hireEmployee(role){
 game.offices[0].employees.push({
@@ -172,6 +208,7 @@ function tick(ts){
             let amount = rand(100,2000);
             let cust = "Customer" + rand(1000,9999);
             game.cash += amount;
+            game.totalIncome += amount;
             e.topup += amount;
             game.history.unshift(`${cust} → $${amount}`);
             showPopup(cust, amount);
@@ -188,6 +225,7 @@ function tick(ts){
     game.weekMinutes = 0;
     game.offices[0].employees.forEach(e=>{
       game.cash -= salary[e.role] || 0;
+      game.expense.salary += salary[e.role] || 0;
     });
   }
 
@@ -220,6 +258,32 @@ document.getElementById("reportContent").innerHTML=t;
 document.getElementById("report").style.display="flex";
 }
 function closeReport(){document.getElementById("report").style.display="none";}
+  function showFinance(){
+  let spent =
+    game.expense.phones +
+    game.expense.gv +
+    game.expense.tg +
+    game.expense.ws +
+    game.expense.salary;
+
+  let html = `
+  <table>
+    <tr><th colspan="2">📊 Financial Summary</th></tr>
+    <tr><td>Total Income</td><td>$${game.totalIncome.toFixed(2)}</td></tr>
+    <tr><td>Total Expense</td><td>$${spent.toFixed(2)}</td></tr>
+    <tr><th colspan="2">Expense Breakdown</th></tr>
+    <tr><td>Phones</td><td>$${game.expense.phones}</td></tr>
+    <tr><td>Google Voice</td><td>$${game.expense.gv}</td></tr>
+    <tr><td>Telegram</td><td>$${game.expense.tg}</td></tr>
+    <tr><td>WhatsApp</td><td>$${game.expense.ws}</td></tr>
+    <tr><td>Salary</td><td>$${game.expense.salary}</td></tr>
+  </table>
+  `;
+
+  document.getElementById("reportContent").innerHTML = html;
+  document.getElementById("report").style.display = "flex";
+}
+
 
 function update(){
 document.getElementById("stats").innerHTML=
