@@ -11,7 +11,23 @@ button{background:#1f2937;color:#e6f1ff;border:1px solid #374151;padding:8px;mar
 .card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #374151;padding:6px;text-align:center}
-#popup,#report{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
+#popup,#report{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  z-index:999;
+}
+
+#popup.active,
+#report.active{
+  display:flex;
+  pointer-events:auto;
+}
+
 .modal{background:#121826;padding:20px;border-radius:8px;max-height:85vh;overflow:auto}
 .fire{background:#7f1d1d;border-color:#991b1b}
 </style>
@@ -237,9 +253,11 @@ function tick(ts){
 function showPopup(c,a){
 document.getElementById("popupContent").innerHTML=
 `🎉 CONGRATULATIONS<br><br>Customer: ${c}<br>Top-Up: $${a}`;
-document.getElementById("popup").style.display="flex";
+document.getElementById("popup").classList.add("active");
+
 }
-function closePopup(){document.getElementById("popup").style.display="none";}
+function closePopup(){document.getElementById("popup").classList.remove("active");
+}
 
 function showReport(){
 let t="<table><tr><th>Role</th><th>Phones</th><th>New</th><th>Used</th><th>Top-Up</th><th>Hours</th></tr>";
@@ -255,9 +273,12 @@ t+=`<tr>
 });
 t+="</table>";
 document.getElementById("reportContent").innerHTML=t;
-document.getElementById("report").style.display="flex";
+let r = document.getElementById("report");
+r.classList.add("active");
+
 }
-function closeReport(){document.getElementById("report").style.display="none";}
+document.getElementById("report").classList.remove("active");
+
   function showFinance(){
   let spent =
     game.expense.phones +
@@ -281,7 +302,8 @@ function closeReport(){document.getElementById("report").style.display="none";}
   `;
 
   document.getElementById("reportContent").innerHTML = html;
-  document.getElementById("report").style.display = "flex";
+  document.getElementById("report").classList.add("active");
+
 }
 
 
