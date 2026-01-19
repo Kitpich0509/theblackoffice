@@ -84,7 +84,7 @@ td,th{border:1px solid #374151;padding:6px;text-align:center}
 <script>
 const SAVE_KEY="office_empire_dashboard_v2";
 let game={
-cash:1000,phones:500,tg:2,ws:2,gv:0,
+cash:1020,phones:500,tg:2,ws:2,gv:0,
 customers:[],history:[],
 offices:[{employees:[]}],
 lastTick:Date.now(),weekMinutes:0,
@@ -99,7 +99,7 @@ expense:{
 }
 };
 
-const salary={Contact:700,Sales:900,"Team Leader":1300,Manager:2000};
+const salary={Contact:600,Sales:800,"Team Leader":1100,Manager:1500};
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
   function chance(p){
