@@ -338,29 +338,35 @@ function save(){
 
 function load(){
   let s = localStorage.getItem(SAVE_KEY);
+
   if(s){
     game = JSON.parse(s);
+  }
 
-    // 🔧 FIX OLD SAVES
-    if(!game.expense){
-      game.expense = {
-        phones: 0,
-        gv: 0,
-        tg: 0,
-        ws: 0,
-        salary: 0
-      };
-    }
-    if(game.cash === 1000){
-  game.cash = 1020;
-}
+  // 🔧 FIX OLD / MISSING DATA
+  if(!game.expense){
+    game.expense = {
+      phones: 0,
+      gv: 0,
+      tg: 0,
+      ws: 0,
+      salary: 0
+    };
+  }
 
+  if(game.cash === 1000){
+    game.cash = 1020;
+  }
 
-    if(game.totalIncome === undefined){
-      game.totalIncome = 0;
-    }
+  if(game.totalIncome === undefined){
+    game.totalIncome = 0;
+  }
+
+  if(!game.lastTick){
+    game.lastTick = Date.now();
   }
 }
+
 
 function simulateOffline(){
   let now = Date.now();
