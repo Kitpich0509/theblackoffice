@@ -9,7 +9,7 @@ header{background:#121826;padding:15px;font-size:20px}
 .panel{background:#121826;padding:15px;border-radius:8px}
 button{background:#1f2937;color:#e6f1ff;border:1px solid #374151;padding:8px;margin:4px 0;width:100%}
 .card{background:#0b1220;padding:10px;border-radius:6px;margin-bottom:8px}
-table{width:100%;border-collapse:collapse;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px} 
 td,th{border:1px solid #374151;padding:6px;text-align:center}
 #popup,#report{
   position:fixed;
@@ -277,7 +277,10 @@ let r = document.getElementById("report");
 r.classList.add("active");
 
 }
-document.getElementById("report").classList.remove("active");
+function closeReport(){
+  document.getElementById("report").classList.remove("active");
+}
+
 
   function showFinance(){
   let spent =
