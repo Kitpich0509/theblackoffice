@@ -236,7 +236,7 @@ function tick(ts){
 
   // ===== WEEKLY SALARY =====
   game.weekMinutes += 10;
-  if(game.weekMinutes >= 10080){
+  if(game.weekMinutes >= 5040){
     game.weekMinutes = 0;
     game.offices[0].employees.forEach(e=>{
       game.cash -= salary[e.role] || 0;
