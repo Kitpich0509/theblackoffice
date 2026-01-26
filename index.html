@@ -186,7 +186,7 @@ function tick(ts){
         e.phoneBuffer += used;
         e.gvUsed++;
 
-        if(chance(0.004)) banAccount("gv");
+        if(chance(0.008)) banAccount("gv");
 
         if(e.phoneBuffer >= rand(100,200)){
           e.phoneBuffer = 0;
